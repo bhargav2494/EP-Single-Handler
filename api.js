@@ -37,7 +37,7 @@ const getNextSerialNumber = async () => {
 // Function to check if an employee with the same email already exists
 const checkExistingEmployeeByEmail = async (email) => {
   const params = {
-    TableName: process.env.DYNAMODB_TABLE_NAME,
+    TableName: process.env.SERIAL_NUMBER_TABLE_NAME,
     IndexName: 'EmailIndex', // Assuming you have an index on the 'personalEmail' attribute
     KeyConditionExpression: 'personalEmail = :email',
     ExpressionAttributeValues: {
