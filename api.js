@@ -5,6 +5,7 @@ const {
   DeleteItemCommand,
   ScanCommand,
   UpdateItemCommand,
+  QueryCommand,
 } = require('@aws-sdk/client-dynamodb');
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 
@@ -31,6 +32,27 @@ const getNextSerialNumber = async () => {
 
   const { Attributes } = await client.send(new UpdateItemCommand(params));
   return Attributes.counter.N;
+};
+
+// Function to check if an employee with the same email already exists
+const checkExistingEmployeeByEmail = async (email) => {
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE_NAME,
+    IndexName: 'EmailIndex', // Assuming you have an index on the 'personalEmail' attribute
+    KeyConditionExpression: 'personalEmail = :email',
+    ExpressionAttributeValues: {
+      ':email': email,
+    },
+  };
+
+  const queryResult = await client.send(new QueryCommand(params));
+
+  if (queryResult.Items && queryResult.Items.length > 0) {
+    // An employee with the same email already exists
+    return queryResult.Items[0];
+  }
+
+  return null;
 };
 
 
@@ -171,6 +193,16 @@ const createEmployee = async (event) => {
           validateStringLength(fieldValue, rule.minLength, rule.maxLength, rule.field);
         }
       }
+    }
+
+    // Check if an employee with the same email already exists
+    const existingEmployee = await checkExistingEmployeeByEmail(body.personalEmail);
+    if (existingEmployee) {
+      response.statusCode = 400;
+      response.body = JSON.stringify({
+        message: 'An employee with the same email already exists.',
+      });
+      return response;
     }
 
     const empId = await getNextSerialNumber();
