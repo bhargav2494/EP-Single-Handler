@@ -1,0 +1,72 @@
+service: employee-singleHandler
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: ap-south-1
+  environment:
+    DYNAMODB_TABLE_NAME: ${self:custom.employeeTableName}
+    SERIAL_NUMBER_TABLE_NAME: ${self:custom.serialNumberTableName} # Add a new environment variable for the serial number table
+custom:
+  employeeTableName: employees-singleHandler-${self:provider.stage}
+  serialNumberTableName: serial-number-singleHandler-${self:provider.stage} # Define the name of the serial number table
+plugins:
+  - serverless-iam-roles-per-function
+functions:
+  api:
+    handler: api.handleRequest # Point to the single handler function in api.js
+    name: api
+    memorySize: 128
+    timeout: 5
+    events:
+      - http:
+          path: employee/{empId}  # Define the path parameter
+          method: ANY  # Accept any HTTP method
+      - http:
+          path: employee
+          method: ANY  # Accept any HTTP method
+      - http:
+          path: employees
+          method: ANY  # Accept any HTTP method
+      - http:
+          path: employee/{empId}  # Define the path parameter
+          method: ANY  # Accept any HTTP method
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - "dynamodb:GetItem"
+          - "dynamodb:PutItem"
+          - "dynamodb:UpdateItem"
+          - "dynamodb:Scan"
+          - "dynamodb:DeleteItem"
+        Resource:
+          - !GetAtt EmployeeTable.Arn
+          - !GetAtt SerialNumberTable.Arn
+resources:
+  Resources:
+    EmployeeTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.employeeTableName}
+        AttributeDefinitions:
+          - AttributeName: empId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: empId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    SerialNumberTable:
+      Type: AWS::DynamoDB::Table # Define a new DynamoDB table for the serial number
+      Properties:
+        TableName: ${self:custom.serialNumberTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1

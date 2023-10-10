@@ -1,0 +1,15 @@
+{
+    "firstName" : "Prasad",
+    "middleName": "raja",
+    "lastName" : "snajiv",
+    "dob" : "2022-04-17",
+    "adhaarSSN" : "827364520459",
+    "gender" : "mal",
+    "maritialStatus" : "married",
+    "passportPhoto": "uploaded",
+    "address" : "Hyniva, Hennur",
+    "phone" : "9564859456",
+    "personalEmail" : "snajiv@gmail..com",
+    "emergencyContactPersonName": "Bhargav",
+    "emergencyContactPersonPhone": "954758245"
+}
