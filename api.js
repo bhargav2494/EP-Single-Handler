@@ -323,16 +323,33 @@ const getAllEmployees = async () => {
     const { Items } = await client.send(
       new ScanCommand({ TableName: process.env.DYNAMODB_TABLE_NAME })
     );
-    const employees = Items.map((item) => {
-      const employee = unmarshall(item);
-      return {
-        empId: employee.empId, // Include the empId in the response
-        ...employee, // Include other employee data
-      };
+    // const employees = Items.map((item) => {
+    //   const employee = unmarshall(item);
+    //   return {
+    //     empId: employee.empId, // Include the empId in the response
+    //     ...employee, // Include other employee data
+    //   };
+    // });
+    // response.body = JSON.stringify({
+    //   message: 'Successfully retrieved all employees.',
+    //   data: employees,
+    // });
+    const employees = Items.map((item) => unmarshall(item));
+
+    // Sort the employees array by empId
+    employees.sort((a, b) => {
+      return parseInt(a.empId) - parseInt(b.empId);
     });
+
+    // Modify the data to include empId
+    const sortedEmployees = employees.map((employee) => ({
+      empId: employee.empId,
+      ...employee,
+    }));
+
     response.body = JSON.stringify({
-      message: 'Successfully retrieved all employees.',
-      data: employees,
+      message: 'Successfully retrieved all employees sorted by empId.',
+      data: sortedEmployees,
     });
   } catch (e) {
     console.error(e);
