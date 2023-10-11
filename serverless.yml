@@ -27,7 +27,7 @@ functions:
           method: ANY  # Accept any HTTP method
       - http:
           path: employees
-          method: ANY  # Accept any HTTP method
+          method: GET  # Accept any HTTP method
       - http:
           path: employee/{empId}  # Define the path parameter
           method: ANY  # Accept any HTTP method
