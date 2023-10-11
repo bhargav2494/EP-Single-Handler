@@ -71,6 +71,7 @@ const getEmployee = async (event) => {
   return response;
 };
 
+// Create Employee Method using async
 const createEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -172,6 +173,7 @@ const createEmployee = async (event) => {
       }
     }
 
+// Insert the record with unique empId & Error hadling exception
     const empId = await getNextSerialNumber();
     body.empId = empId.toString();
     const params = {
@@ -196,6 +198,8 @@ const createEmployee = async (event) => {
   return response;
 };
 
+// Update Employee-Details using async
+
 const updateEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -203,7 +207,7 @@ const updateEmployee = async (event) => {
     const empId = event.pathParameters ? event.pathParameters.empId : null;
 
     if (!empId) {
-      throw new Error('empId parameter is missing');
+      throw new Error('empId not present');
     }
 
     // Check if the empId exists in the database
@@ -343,11 +347,13 @@ const getAllEmployees = async () => {
 };
 
 const handleRequest = async (event) => {
-  const { httpMethod } = event;
+  const { httpMethod, path } = event;
   const response = { statusCode: 400 }; // Default response for invalid requests
 
   try {
-    if (httpMethod === 'GET') {
+    if (httpMethod === 'GET' && path === '/employees') {
+      return getAllEmployees();
+    } else if (httpMethod === 'GET') {
       return getEmployee(event);
     } else if (httpMethod === 'POST') {
       return createEmployee(event);
@@ -355,8 +361,6 @@ const handleRequest = async (event) => {
       return updateEmployee(event);
     } else if (httpMethod === 'DELETE') {
       return deleteEmployee(event);
-    } else if (httpMethod === 'GET' && event.path === '/employees') {
-      return getAllEmployees();
     } else {
       response.body = JSON.stringify({ message: 'Invalid HTTP method or path' });
     }
