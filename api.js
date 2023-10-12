@@ -12,64 +12,37 @@ const client = new DynamoDBClient();
 
 const SERIAL_NUMBER_TABLE_NAME = process.env.SERIAL_NUMBER_TABLE_NAME;
 
-const getNextSerialNumber = async () => {
-  const params = {
-    TableName: process.env.SERIAL_NUMBER_TABLE_NAME,
-    Key: {
-      id: { S: 'employeeCounter' },
-    },
-    UpdateExpression: 'SET #counter = if_not_exists(#counter, :initValue) + :incrValue',
-    ExpressionAttributeNames: {
-      '#counter': 'counter',
-    },
-    ExpressionAttributeValues: {
-      ':initValue': { N: '1000' }, // Initialize the counter if it doesn't exist (change this as needed)
-      ':incrValue': { N: '1' }, // Increment the counter by 1
-    },
-    ReturnValues: 'UPDATED_NEW',
-  };
+// Route the request to particular function
 
-  const { Attributes } = await client.send(new UpdateItemCommand(params));
-  return Attributes.counter.N;
-};
+const handleRequest = async (event) => {
+  const { httpMethod, path } = event;
+  const response = { statusCode: 400 }; // Default response for invalid requests
 
-const getEmployee = async (event) => {
-  const response = { statusCode: 200 };
   try {
-    const empId = event.pathParameters ? event.pathParameters.empId : null;
-
-    if (!empId) {
-      throw new Error('empId parameter is missing');
-    }
-
-    const params = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
-      Key: marshall({ empId }),
-    };
-
-    const { Item } = await client.send(new GetItemCommand(params));
-
-    if (Item) {
-      const employeeData = unmarshall(Item);
-      response.body = JSON.stringify({
-        message: 'Successfully retrieved employee.',
-        data: employeeData,
-      });
+    if (httpMethod === 'GET' && path === '/employees') {
+      return getAllEmployees();
+    } else if (httpMethod === 'GET') {
+      return getEmployee(event);
+    } else if (httpMethod === 'POST') {
+      return createEmployee(event);
+    } else if (httpMethod === 'PUT') {
+      return updateEmployee(event);
+    } else if (httpMethod === 'DELETE') {
+      return deleteEmployee(event);
     } else {
-      response.statusCode = 404; // Employee not found
-      response.body = JSON.stringify({
-        message: `Employee with empId ${empId} not found`,
-      });
+      response.body = JSON.stringify({ message: 'Invalid HTTP method or path' });
     }
+
+    response.statusCode = 200; // Set success status code for valid requests
   } catch (e) {
     console.error(e);
-    response.statusCode = 500; // Internal server error
-    response.body = JSON.stringify({
-      message: `Failed to get employee: ${e.message}`,
-    });
+    response.statusCode = 500; // Internal server error for exceptions
+    response.body = JSON.stringify({ message: `Error: ${e.message}` });
   }
+
   return response;
 };
+
 
 // Create Employee Method using async
 const createEmployee = async (event) => {
@@ -183,7 +156,7 @@ const createEmployee = async (event) => {
     const createResult = await client.send(new PutItemCommand(params));
     response.body = JSON.stringify({
       message: 'Successfully created employee.',
-      createResult,
+      // createResult,
       empId,
     });
   } catch (e) {
@@ -268,6 +241,49 @@ const updateEmployee = async (event) => {
   return response;
 };
 
+
+// getEmployee by empID
+
+const getEmployee = async (event) => {
+  const response = { statusCode: 200 };
+  try {
+    const empId = event.pathParameters ? event.pathParameters.empId : null;
+
+    if (!empId) {
+      throw new Error('empId parameter is missing');
+    }
+
+    const params = {
+      TableName: process.env.DYNAMODB_TABLE_NAME,
+      Key: marshall({ empId }),
+    };
+
+    const { Item } = await client.send(new GetItemCommand(params));
+
+    if (Item) {
+      const employeeData = unmarshall(Item);
+      response.body = JSON.stringify({
+        message: 'Successfully retrieved employee.',
+        data: employeeData,
+      });
+    } else {
+      response.statusCode = 404; // Employee not found
+      response.body = JSON.stringify({
+        message: `Employee with empId ${empId} not found`,
+      });
+    }
+  } catch (e) {
+    console.error(e);
+    response.statusCode = 500; // Internal server error
+    response.body = JSON.stringify({
+      message: `Failed to get employee: ${e.message}`,
+    });
+  }
+  return response;
+};
+
+// Delete Employee by empID
+
 const deleteEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -317,6 +333,9 @@ const deleteEmployee = async (event) => {
   return response;
 };
 
+
+// Get AllEmployees List
+
 const getAllEmployees = async () => {
   const response = { statusCode: 200 };
   try {
@@ -363,34 +382,30 @@ const getAllEmployees = async () => {
   return response;
 };
 
-const handleRequest = async (event) => {
-  const { httpMethod, path } = event;
-  const response = { statusCode: 400 }; // Default response for invalid requests
 
-  try {
-    if (httpMethod === 'GET' && path === '/employees') {
-      return getAllEmployees();
-    } else if (httpMethod === 'GET') {
-      return getEmployee(event);
-    } else if (httpMethod === 'POST') {
-      return createEmployee(event);
-    } else if (httpMethod === 'PUT') {
-      return updateEmployee(event);
-    } else if (httpMethod === 'DELETE') {
-      return deleteEmployee(event);
-    } else {
-      response.body = JSON.stringify({ message: 'Invalid HTTP method or path' });
-    }
+// Generate sequential unique empID while creating Employee
 
-    response.statusCode = 200; // Set success status code for valid requests
-  } catch (e) {
-    console.error(e);
-    response.statusCode = 500; // Internal server error for exceptions
-    response.body = JSON.stringify({ message: `Error: ${e.message}` });
-  }
+const getNextSerialNumber = async () => {
+  const params = {
+    TableName: process.env.SERIAL_NUMBER_TABLE_NAME,
+    Key: {
+      id: { S: 'employeeCounter' },
+    },
+    UpdateExpression: 'SET #counter = if_not_exists(#counter, :initValue) + :incrValue',
+    ExpressionAttributeNames: {
+      '#counter': 'counter',
+    },
+    ExpressionAttributeValues: {
+      ':initValue': { N: '1000' }, // Initialize the counter if it doesn't exist (change this as needed)
+      ':incrValue': { N: '1' }, // Increment the counter by 1
+    },
+    ReturnValues: 'UPDATED_NEW',
+  };
 
-  return response;
+  const { Attributes } = await client.send(new UpdateItemCommand(params));
+  return Attributes.counter.N;
 };
+
 
 module.exports = {
   handleRequest,
