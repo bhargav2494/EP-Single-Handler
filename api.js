@@ -44,7 +44,135 @@ const handleRequest = async (event) => {
 };
 
 
-// Create Employee Method using async
+// // Create Employee Method using async
+// const createEmployee = async (event) => {
+//   const response = { statusCode: 200 };
+//   try {
+//     const body = JSON.parse(event.body);
+
+//     const knownAttributes = [
+//       'firstName',
+//       'middleName',
+//       'lastName',
+//       'dob',
+//       'adhaarSSN',
+//       'gender',
+//       'maritialStatus',
+//       'passportPhoto',
+//       'address',
+//       'phone',
+//       'personalEmail',
+//       'emergencyContactPersonName',
+//       'emergencyContactPersonPhone'
+//     ];
+//     // Replace with actual attribute names
+
+//     const unknownAttributes = Object.keys(body).filter(
+//       (key) => !knownAttributes.includes(key)
+//     );
+
+//     if (unknownAttributes.length > 0) {
+//       // Unknown attributes are present, return an error response
+//       response.statusCode = 400; // You can choose an appropriate status code
+//       response.body = JSON.stringify({
+//         message: 'Unknown attributes in the request.',
+//         unknownAttributes,
+//       });
+//       return response;
+//     }
+
+//     // Validate the input data
+//     if (!body || body?.firstName || !body.middleName || !body.lastName || !body.dob || !body.adhaarSSN || !body.gender || !body.maritialStatus || !body.passportPhoto || !body.address || !body.phone || !body.personalEmail || !body.emergencyContactPersonName || !body.emergencyContactPersonPhone) {
+//       // Check if required fields are present
+//       response.statusCode = 200;
+//       throw new Error('Missing required fields');
+//     }
+
+//     // Define validation functions
+//     const validateStringLength = (value, minLength, maxLength, fieldName) => {
+//       if (typeof value !== 'string' || value.length < minLength || value.length > maxLength) {
+//         throw new Error(`Invalid ${fieldName} length. It should be between ${minLength} and ${maxLength} characters.`);
+//       }
+//     };
+
+//     const validateFutureDate = (dateString, fieldName) => {
+//       const currentDate = new Date().toISOString().split('T')[0]; // Get current date in 'YYYY-MM-DD' format
+//       if (dateString > currentDate) {
+//         throw new Error(`Invalid ${fieldName}. It should not be a future date .`);
+//       }
+//     };
+
+
+//     const validateEmailFormat = (email, fieldName) => {
+//       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//       if (!emailRegex.test(email)) {
+//         throw new Error(`Invalid ${fieldName} format.`);
+//       }
+//     };
+
+//     // Define validation rules for each field
+//     const validationRules = [
+//       { field: 'firstName', minLength: 3, maxLength: 12 },
+//       { field: 'middleName', minLength: 3, maxLength: 12 },
+//       { field: 'lastName', minLength: 3, maxLength: 12 },
+//       { field: 'dob', validate: (value) => validateFutureDate(value, 'dob') },
+//       { field: 'adhaarSSN', minLength: 3, maxLength: 12 },
+//       {
+//         field: 'gender',
+//         validate: (value) => {
+//           if (!['male', 'female', 'other'].includes(value.toLowerCase())) {
+//             throw new Error(`Invalid gender value.`);
+//           }
+//         },
+//       },
+//       { field: 'maritalStatus', minLength: 3, maxLength: 12 },
+//       { field: 'passportPhoto', minLength: 3, maxLength: 255 }, // Assuming a URL or file path
+//       { field: 'address', minLength: 3, maxLength: 255 },
+//       { field: 'phone', minLength: 10, maxLength: 12 },
+//       { field: 'personalEmail', validate: (value) => validateEmailFormat(value, 'personalEmail') },
+//       { field: 'emergencyContactPersonName', minLength: 3, maxLength: 255 },
+//       { field: 'emergencyContactPersonPhone', minLength: 10, maxLength: 12 },
+//     ];
+
+//     // Perform field validations
+//     for (const rule of validationRules) {
+//       const fieldValue = body[rule.field];
+//       if (fieldValue) {
+//         if (rule.validate) {
+//           rule.validate(fieldValue);
+//         } else {
+//           validateStringLength(fieldValue, rule.minLength, rule.maxLength, rule.field);
+//         }
+//       }
+//     }
+
+    
+//     // Insert the record with unique empId & Error hadling exception
+//     const empId = await getNextSerialNumber();
+//     body.empId = empId.toString();
+//     const params = {
+//       TableName: process.env.DYNAMODB_TABLE_NAME,
+//       Item: marshall(body || {}),
+//     };
+//     const createResult = await client.send(new PutItemCommand(params));
+//     response.body = JSON.stringify({
+//       message: 'Successfully created employee.',
+//       // createResult,
+//       empId,
+//     });
+//   } catch (e) {
+//     console.error(e);
+//     response.statusCode = 500;
+//     response.body = JSON.stringify({
+//       message: 'Failed to create employee.',
+//       errorMsg: e.message,
+//       errorStack: e.stack,
+//     });
+//   }
+//   return response;
+// };
+
+
 const createEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -63,9 +191,8 @@ const createEmployee = async (event) => {
       'phone',
       'personalEmail',
       'emergencyContactPersonName',
-      'emergencyContactPersonPhone'
+      'emergencyContactPersonPhone',
     ];
-    // Replace with actual attribute names
 
     const unknownAttributes = Object.keys(body).filter(
       (key) => !knownAttributes.includes(key)
@@ -73,7 +200,7 @@ const createEmployee = async (event) => {
 
     if (unknownAttributes.length > 0) {
       // Unknown attributes are present, return an error response
-      response.statusCode = 400; // You can choose an appropriate status code
+      response.statusCode = 400;
       response.body = JSON.stringify({
         message: 'Unknown attributes in the request.',
         unknownAttributes,
@@ -82,124 +209,47 @@ const createEmployee = async (event) => {
     }
 
     // Validate the input data
-    if (!body || !body.firstName || !body.middleName || !body.lastName || !body.dob || !body.adhaarSSN || !body.gender || !body.maritialStatus || !body.passportPhoto || !body.address || !body.phone || !body.personalEmail || !body.emergencyContactPersonName || !body.emergencyContactPersonPhone) {
-      // Check if required fields are present
-      response.statusCode = 200;
-      throw new Error('Missing required fields');
-    }
-
-    // Define validation functions
-    const validateStringLength = (value, minLength, maxLength, fieldName) => {
-      if (typeof value !== 'string' || value.length < minLength || value.length > maxLength) {
-        throw new Error(`Invalid ${fieldName} length. It should be between ${minLength} and ${maxLength} characters.`);
-      }
-    };
-
-    const validateFutureDate = (dateString, fieldName) => {
-      const currentDate = new Date().toISOString().split('T')[0]; // Get current date in 'YYYY-MM-DD' format
-      if (dateString > currentDate) {
-        throw new Error(`Invalid ${fieldName}. It should not be a future date .`);
-      }
-    };
-
-
-    const validateEmailFormat = (email, fieldName) => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        throw new Error(`Invalid ${fieldName} format.`);
-      }
-    };
-
-    // Define validation rules for each field
-    const validationRules = [
-      { field: 'firstName', minLength: 3, maxLength: 12 },
-      { field: 'middleName', minLength: 3, maxLength: 12 },
-      { field: 'lastName', minLength: 3, maxLength: 12 },
-      { field: 'dob', validate: (value) => validateFutureDate(value, 'dob') },
-      { field: 'adhaarSSN', minLength: 3, maxLength: 12 },
-      {
-        field: 'gender',
-        validate: (value) => {
-          if (!['male', 'female', 'other'].includes(value.toLowerCase())) {
-            throw new Error(`Invalid gender value.`);
-          }
-        },
-      },
-      { field: 'maritalStatus', minLength: 3, maxLength: 12 },
-      { field: 'passportPhoto', minLength: 3, maxLength: 255 }, // Assuming a URL or file path
-      { field: 'address', minLength: 3, maxLength: 255 },
-      { field: 'phone', minLength: 10, maxLength: 12 },
-      { field: 'personalEmail', validate: (value) => validateEmailFormat(value, 'personalEmail') },
-      { field: 'emergencyContactPersonName', minLength: 3, maxLength: 255 },
-      { field: 'emergencyContactPersonPhone', minLength: 10, maxLength: 12 },
-    ];
-
-    // Perform field validations
-    for (const rule of validationRules) {
-      const fieldValue = body[rule.field];
-      if (fieldValue) {
-        if (rule.validate) {
-          rule.validate(fieldValue);
-        } else {
-          validateStringLength(fieldValue, rule.minLength, rule.maxLength, rule.field);
-        }
-      }
+    const missingFields = knownAttributes.filter((attr) => !body[attr]);
+    if (missingFields.length > 0) {
+      response.statusCode = 400;
+      response.body = JSON.stringify({
+        message: 'Missing required fields',
+        missingFields,
+      });
+      return response;
     }
 
     // Check if the email already exists in the database using a conditional expression
     const email = body.personalEmail;
     const conditionExpression = 'attribute_not_exists(personalEmail)';
 
-    // Insert the record with unique empId & Error hadling exception
-    const empId = await getNextSerialNumber();
+    const empId = await getNextSerialNumber(); // Assuming this function generates empId correctly
     body.empId = empId.toString();
+
     const params = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
-      Item: marshall(body || {}),
+      Item: body,
       ConditionExpression: conditionExpression,
     };
-    // const createResult = await client.send(new PutItemCommand(params));
-    // response.body = JSON.stringify({
-    //   message: 'Successfully created employee.',
-    //   // createResult,
-    //   empId,
-    // });
-    try {
-      // const empId = await getNextSerialNumber();
-      // body.empId = empId.toString();
 
-      const createResult = await client.send(new PutItemCommand(params));
-      response.body = JSON.stringify({
-        message: 'Successfully created employee.',
-        empId,
-      });
-    } catch (error) {
-      if (error.code === 'ConditionalCheckFailedException') {
-        // The email already exists
-        response.statusCode = 400;
-        response.body = JSON.stringify({
-          message: 'Already user Exists with this Email.',
-        });
-      } else {
-        console.error('Error creating employee:', error);
-        response.statusCode = 500;
-        response.body = JSON.stringify({
-          message: 'Failed to create employee.',
-          errorMsg: error.message,
-        });
-      }
-    }
-  } catch (e) {
-    console.error(e);
+    await dynamoDB.put(params).promise();
+
+    response.body = JSON.stringify({
+      message: 'Successfully created employee.',
+      empId,
+    });
+  } catch (error) {
+    console.error('Error creating employee:', error);
     response.statusCode = 500;
     response.body = JSON.stringify({
       message: 'Failed to create employee.',
-      errorMsg: e.message,
-      errorStack: e.stack,
+      errorMsg: error.message,
     });
   }
+
   return response;
 };
+
 
 // Update Employee-Details using async
 
