@@ -150,9 +150,9 @@ const createEmployee = async (event) => {
     const email = body.personalEmail;
     const conditionExpression = 'attribute_not_exists(personalEmail)';
 
-    // // Insert the record with unique empId & Error hadling exception
-    // const empId = await getNextSerialNumber();
-    // body.empId = empId.toString();
+    // Insert the record with unique empId & Error hadling exception
+    const empId = await getNextSerialNumber();
+    body.empId = empId.toString();
     const params = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Item: marshall(body || {}),
@@ -165,8 +165,8 @@ const createEmployee = async (event) => {
     //   empId,
     // });
     try {
-      const empId = await getNextSerialNumber();
-      body.empId = empId.toString();
+      // const empId = await getNextSerialNumber();
+      // body.empId = empId.toString();
 
       const createResult = await client.send(new PutItemCommand(params));
       response.body = JSON.stringify({
