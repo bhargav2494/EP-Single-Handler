@@ -146,19 +146,49 @@ const createEmployee = async (event) => {
       }
     }
 
-    // Insert the record with unique empId & Error hadling exception
-    const empId = await getNextSerialNumber();
-    body.empId = empId.toString();
+    // Check if the email already exists in the database using a conditional expression
+    const email = body.personalEmail;
+    const conditionExpression = 'attribute_not_exists(personalEmail)';
+
+    // // Insert the record with unique empId & Error hadling exception
+    // const empId = await getNextSerialNumber();
+    // body.empId = empId.toString();
     const params = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Item: marshall(body || {}),
+      ConditionExpression: conditionExpression,
     };
-    const createResult = await client.send(new PutItemCommand(params));
-    response.body = JSON.stringify({
-      message: 'Successfully created employee.',
-      // createResult,
-      empId,
-    });
+    // const createResult = await client.send(new PutItemCommand(params));
+    // response.body = JSON.stringify({
+    //   message: 'Successfully created employee.',
+    //   // createResult,
+    //   empId,
+    // });
+    try {
+      const empId = await getNextSerialNumber();
+      body.empId = empId.toString();
+
+      const createResult = await client.send(new PutItemCommand(params));
+      response.body = JSON.stringify({
+        message: 'Successfully created employee.',
+        empId,
+      });
+    } catch (error) {
+      if (error.code === 'ConditionalCheckFailedException') {
+        // The email already exists
+        response.statusCode = 400;
+        response.body = JSON.stringify({
+          message: 'Already user Exists with this Email.',
+        });
+      } else {
+        console.error('Error creating employee:', error);
+        response.statusCode = 500;
+        response.body = JSON.stringify({
+          message: 'Failed to create employee.',
+          errorMsg: error.message,
+        });
+      }
+    }
   } catch (e) {
     console.error(e);
     response.statusCode = 500;
@@ -172,74 +202,6 @@ const createEmployee = async (event) => {
 };
 
 // Update Employee-Details using async
-
-// const updateEmployee = async (event) => {
-//   const response = { statusCode: 200 };
-//   try {
-//     const body = JSON.parse(event.body);
-//     const empId = event.pathParameters ? event.pathParameters.empId : null;
-
-//     if (!empId) {
-//       throw new Error('empId not present');
-//     }
-
-//     // Check if the empId exists in the database
-//     const getItemParams = {
-//       TableName: process.env.DYNAMODB_TABLE_NAME,
-//       Key: marshall({ empId }),
-//     };
-
-//     const { Item } = await client.send(new GetItemCommand(getItemParams));
-
-//     if (!Item) {
-//       response.statusCode = 404; // Employee Id not found
-//       response.body = JSON.stringify({
-//         message: `Employee with empId ${empId} not found`,
-//       });
-//       return response;
-//     }
-
-//     const objKeys = Object.keys(body);
-
-//     const params = {
-//       TableName: process.env.DYNAMODB_TABLE_NAME,
-//       Key: marshall({ empId }),
-//       UpdateExpression: `SET ${objKeys
-//         .map((_, index) => `#key${index} = :value${index}`)
-//         .join(', ')}`,
-//       ExpressionAttributeNames: objKeys.reduce(
-//         (acc, key, index) => ({
-//           ...acc,
-//           [`#key${index}`]: key,
-//         }),
-//         {}
-//       ),
-//       ExpressionAttributeValues: marshall(
-//         objKeys.reduce(
-//           (acc, key, index) => ({
-//             ...acc,
-//             [`:value${index}`]: body[key],
-//           }),
-//           {}
-//         )
-//       ),
-//     };
-//     const updateResult = await client.send(new UpdateItemCommand(params));
-//     response.body = JSON.stringify({
-//       message: 'Successfully updated employee.',
-//       updateResult,
-//     });
-//   } catch (e) {
-//     console.error(e);
-//     response.statusCode = 400;
-//     response.body = JSON.stringify({
-//       message: 'Failed to update employee.',
-//       errorMsg: e.message,
-//       errorStack: e.stack,
-//     });
-//   }
-//   return response;
-// };
 
 const updateEmployee = async (event) => {
   const response = { statusCode: 200 };
