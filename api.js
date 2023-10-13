@@ -82,7 +82,7 @@ const createEmployee = async (event) => {
     }
 
     // Validate the input data
-    if (!body || body?.firstName || !body.middleName || !body.lastName || !body.dob || !body.adhaarSSN || !body.gender || !body.maritialStatus || !body.passportPhoto || !body.address || !body.phone || !body.personalEmail || !body.emergencyContactPersonName || !body.emergencyContactPersonPhone) {
+    if (!body || !body.firstName || !body.middleName || !body.lastName || !body.dob || !body.adhaarSSN || !body.gender || !body.maritialStatus || !body.passportPhoto || !body.address || !body.phone || !body.personalEmail || !body.emergencyContactPersonName || !body.emergencyContactPersonPhone) {
       // Check if required fields are present
       response.statusCode = 200;
       throw new Error('Missing required fields');
