@@ -82,7 +82,7 @@ const createEmployee = async (event) => {
     }
 
     // Validate the input data
-    if (!body || !body.firstName || !body.middleName || !body.lastName || !body.dob || !body.adhaarSSN || !body.gender || !body.maritialStatus || !body.passportPhoto || !body.address || !body.phone || !body.personalEmail || !body.emergencyContactPersonName || !body.emergencyContactPersonPhone) {
+    if (!body || body?.firstName || !body.middleName || !body.lastName || !body.dob || !body.adhaarSSN || !body.gender || !body.maritialStatus || !body.passportPhoto || !body.address || !body.phone || !body.personalEmail || !body.emergencyContactPersonName || !body.emergencyContactPersonPhone) {
       // Check if required fields are present
       response.statusCode = 200;
       throw new Error('Missing required fields');
@@ -146,7 +146,7 @@ const createEmployee = async (event) => {
       }
     }
 
-// Insert the record with unique empId & Error hadling exception
+    // Insert the record with unique empId & Error hadling exception
     const empId = await getNextSerialNumber();
     body.empId = empId.toString();
     const params = {
@@ -284,6 +284,54 @@ const getEmployee = async (event) => {
 
 // Delete Employee by empID
 
+// const deleteEmployee = async (event) => {
+//   const response = { statusCode: 200 };
+//   try {
+//     const empId = event.pathParameters ? event.pathParameters.empId : null;
+
+//     if (!empId) {
+//       throw new Error('empId parameter is missing');
+//     }
+
+//     const getItemParams = {
+//       TableName: process.env.DYNAMODB_TABLE_NAME,
+//       Key: marshall({ empId }), // Assuming you're using marshall here
+//     };
+
+//     // Check if the record exists
+//     const { Item } = await client.send(new GetItemCommand(getItemParams));
+
+//     if (!Item) {
+//       // If the record doesn't exist, return an error
+//       response.statusCode = 404;
+//       response.body = JSON.stringify({
+//         message: `Employee with empId ${empId} not found`,
+//       });
+//       return response;
+//     }
+
+//     // If the record exists, proceed with deletion
+//     const deleteParams = {
+//       TableName: process.env.DYNAMODB_TABLE_NAME,
+//       Key: marshall({ empId }), // Assuming you're using marshall here
+//     };
+
+//     const deleteResult = await client.send(new DeleteItemCommand(deleteParams));
+//     response.body = JSON.stringify({
+//       message: 'Successfully deleted employee.',
+//       deleteResult,
+//     });
+//   } catch (e) {
+//     console.error(e);
+//     response.statusCode = 500;
+//     response.body = JSON.stringify({
+//       message: 'Failed to delete employee.',
+//       errorMsg: e.message,
+//       errorStack: e.stack,
+//     });
+//   }
+//   return response;
+// };
 const deleteEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -293,34 +341,28 @@ const deleteEmployee = async (event) => {
       throw new Error('empId parameter is missing');
     }
 
-    const getItemParams = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
-      Key: marshall({ empId }), // Assuming you're using marshall here
-    };
-
-    // Check if the record exists
-    const { Item } = await client.send(new GetItemCommand(getItemParams));
-
-    if (!Item) {
-      // If the record doesn't exist, return an error
-      response.statusCode = 404;
-      response.body = JSON.stringify({
-        message: `Employee with empId ${empId} not found`,
-      });
-      return response;
-    }
-
-    // If the record exists, proceed with deletion
     const deleteParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Key: marshall({ empId }), // Assuming you're using marshall here
+      ConditionExpression: 'attribute_exists(empId)',
     };
 
-    const deleteResult = await client.send(new DeleteItemCommand(deleteParams));
-    response.body = JSON.stringify({
-      message: 'Successfully deleted employee.',
-      deleteResult,
-    });
+    try {
+      const deleteResult = await client.send(new DeleteItemCommand(deleteParams));
+      response.body = JSON.stringify({
+        message: 'Successfully deleted employee.',
+        deleteResult,
+      });
+    } catch (error) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        response.statusCode = 404;
+        response.body = JSON.stringify({
+          message: `Employee with empId ${empId} not found`,
+        });
+      } else {
+        throw error; // Re-throw other errors
+      }
+    }
   } catch (e) {
     console.error(e);
     response.statusCode = 500;
@@ -334,6 +376,7 @@ const deleteEmployee = async (event) => {
 };
 
 
+
 // Get AllEmployees List
 
 const getAllEmployees = async () => {
@@ -342,17 +385,7 @@ const getAllEmployees = async () => {
     const { Items } = await client.send(
       new ScanCommand({ TableName: process.env.DYNAMODB_TABLE_NAME })
     );
-    // const employees = Items.map((item) => {
-    //   const employee = unmarshall(item);
-    //   return {
-    //     empId: employee.empId, // Include the empId in the response
-    //     ...employee, // Include other employee data
-    //   };
-    // });
-    // response.body = JSON.stringify({
-    //   message: 'Successfully retrieved all employees.',
-    //   data: employees,
-    // });
+
     const employees = Items.map((item) => unmarshall(item));
 
     // Sort the employees array by empId
