@@ -154,6 +154,7 @@ const createEmployee = async (event) => {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Item: marshall(body || {}),
       ConditionExpression: 'attribute_not_exists(personalEmail)', // Check for unique email
+      IndexName: 'personalEmail-index',
     };
     const createResult = await client.send(new PutItemCommand(params));
     response.body = JSON.stringify({
