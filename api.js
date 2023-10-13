@@ -173,6 +173,74 @@ const createEmployee = async (event) => {
 
 // Update Employee-Details using async
 
+// const updateEmployee = async (event) => {
+//   const response = { statusCode: 200 };
+//   try {
+//     const body = JSON.parse(event.body);
+//     const empId = event.pathParameters ? event.pathParameters.empId : null;
+
+//     if (!empId) {
+//       throw new Error('empId not present');
+//     }
+
+//     // Check if the empId exists in the database
+//     const getItemParams = {
+//       TableName: process.env.DYNAMODB_TABLE_NAME,
+//       Key: marshall({ empId }),
+//     };
+
+//     const { Item } = await client.send(new GetItemCommand(getItemParams));
+
+//     if (!Item) {
+//       response.statusCode = 404; // Employee Id not found
+//       response.body = JSON.stringify({
+//         message: `Employee with empId ${empId} not found`,
+//       });
+//       return response;
+//     }
+
+//     const objKeys = Object.keys(body);
+
+//     const params = {
+//       TableName: process.env.DYNAMODB_TABLE_NAME,
+//       Key: marshall({ empId }),
+//       UpdateExpression: `SET ${objKeys
+//         .map((_, index) => `#key${index} = :value${index}`)
+//         .join(', ')}`,
+//       ExpressionAttributeNames: objKeys.reduce(
+//         (acc, key, index) => ({
+//           ...acc,
+//           [`#key${index}`]: key,
+//         }),
+//         {}
+//       ),
+//       ExpressionAttributeValues: marshall(
+//         objKeys.reduce(
+//           (acc, key, index) => ({
+//             ...acc,
+//             [`:value${index}`]: body[key],
+//           }),
+//           {}
+//         )
+//       ),
+//     };
+//     const updateResult = await client.send(new UpdateItemCommand(params));
+//     response.body = JSON.stringify({
+//       message: 'Successfully updated employee.',
+//       updateResult,
+//     });
+//   } catch (e) {
+//     console.error(e);
+//     response.statusCode = 400;
+//     response.body = JSON.stringify({
+//       message: 'Failed to update employee.',
+//       errorMsg: e.message,
+//       errorStack: e.stack,
+//     });
+//   }
+//   return response;
+// };
+
 const updateEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -183,25 +251,9 @@ const updateEmployee = async (event) => {
       throw new Error('empId not present');
     }
 
-    // Check if the empId exists in the database
-    const getItemParams = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
-      Key: marshall({ empId }),
-    };
-
-    const { Item } = await client.send(new GetItemCommand(getItemParams));
-
-    if (!Item) {
-      response.statusCode = 404; // Employee Id not found
-      response.body = JSON.stringify({
-        message: `Employee with empId ${empId} not found`,
-      });
-      return response;
-    }
-
     const objKeys = Object.keys(body);
 
-    const params = {
+    const updateParams = {
       TableName: process.env.DYNAMODB_TABLE_NAME,
       Key: marshall({ empId }),
       UpdateExpression: `SET ${objKeys
@@ -223,12 +275,25 @@ const updateEmployee = async (event) => {
           {}
         )
       ),
+      ConditionExpression: 'attribute_exists(empId)', // Check if empId exists
     };
-    const updateResult = await client.send(new UpdateItemCommand(params));
-    response.body = JSON.stringify({
-      message: 'Successfully updated employee.',
-      updateResult,
-    });
+
+    try {
+      const updateResult = await client.send(new UpdateItemCommand(updateParams));
+      response.body = JSON.stringify({
+        message: `Successfully updated employee ${empId}.`,
+        updateResult,
+      });
+    } catch (error) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        response.statusCode = 404; // Employee Id not found
+        response.body = JSON.stringify({
+          message: `Employee with empId ${empId} not found`,
+        });
+      } else {
+        throw error; // Re-throw other errors
+      }
+    }
   } catch (e) {
     console.error(e);
     response.statusCode = 400;
@@ -240,6 +305,7 @@ const updateEmployee = async (event) => {
   }
   return response;
 };
+
 
 
 // getEmployee by empID
@@ -284,54 +350,6 @@ const getEmployee = async (event) => {
 
 // Delete Employee by empID
 
-// const deleteEmployee = async (event) => {
-//   const response = { statusCode: 200 };
-//   try {
-//     const empId = event.pathParameters ? event.pathParameters.empId : null;
-
-//     if (!empId) {
-//       throw new Error('empId parameter is missing');
-//     }
-
-//     const getItemParams = {
-//       TableName: process.env.DYNAMODB_TABLE_NAME,
-//       Key: marshall({ empId }), // Assuming you're using marshall here
-//     };
-
-//     // Check if the record exists
-//     const { Item } = await client.send(new GetItemCommand(getItemParams));
-
-//     if (!Item) {
-//       // If the record doesn't exist, return an error
-//       response.statusCode = 404;
-//       response.body = JSON.stringify({
-//         message: `Employee with empId ${empId} not found`,
-//       });
-//       return response;
-//     }
-
-//     // If the record exists, proceed with deletion
-//     const deleteParams = {
-//       TableName: process.env.DYNAMODB_TABLE_NAME,
-//       Key: marshall({ empId }), // Assuming you're using marshall here
-//     };
-
-//     const deleteResult = await client.send(new DeleteItemCommand(deleteParams));
-//     response.body = JSON.stringify({
-//       message: 'Successfully deleted employee.',
-//       deleteResult,
-//     });
-//   } catch (e) {
-//     console.error(e);
-//     response.statusCode = 500;
-//     response.body = JSON.stringify({
-//       message: 'Failed to delete employee.',
-//       errorMsg: e.message,
-//       errorStack: e.stack,
-//     });
-//   }
-//   return response;
-// };
 const deleteEmployee = async (event) => {
   const response = { statusCode: 200 };
   try {
@@ -350,7 +368,7 @@ const deleteEmployee = async (event) => {
     try {
       const deleteResult = await client.send(new DeleteItemCommand(deleteParams));
       response.body = JSON.stringify({
-        message: 'Successfully deleted employee.',
+        message: `Successfully deleted employee have ${empId}.`,
         deleteResult,
       });
     } catch (error) {
